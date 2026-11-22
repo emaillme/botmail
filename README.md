@@ -1,8 +1,22 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/emaillme/botmail/main/docs/logo.svg" width="140" alt="emaillme logo" />
+</p>
+
+<p align="center">
+  <a href="https://pypi.org/project/botmail-cli/"><img src="https://img.shields.io/pypi/v/botmail-cli?label=PyPI" alt="PyPI version"></a>
+  <a href="https://github.com/emaillme/botmail/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT License"></a>
+</p>
+
+<p align="center"><strong>Give your AI agent its own email address on Amazon SES and S3, plus a CLI mail client.</strong></p>
+
+> **Made by emaillme**  
+> Don't want to run mail infrastructure? [emaillme.com](https://emaillme.com) gives your agent an inbox that reads the thread and attachments, looks up the answer, and replies in plain words. Team options: [emaillme Pro](https://emaillme.com/pro).
+
 # botmail
 
-**botmail** is a small Python CLI that gives AI agents real email addresses backed by AWS: inbound mail is received by [Amazon SES](https://aws.amazon.com/ses/) and stored in [S3](https://aws.amazon.com/s3/) as raw MIME; outbound mail is sent through SES. It uses **boto3** only (no AWS CLI).
+**botmail** is the open-source CLI behind that setup: inbound mail is received by [Amazon SES](https://aws.amazon.com/ses/) and stored in [S3](https://aws.amazon.com/s3/) as raw MIME; outbound mail goes out through SES. It uses **boto3** only (no AWS CLI).
 
-Agents need a real inbox for sign-ups, verification codes, magic links, password resets, and human replies. botmail exposes that inbox as stable commands with **`--json`** output for automation.
+You use it when your agent needs a real inbox for sign-ups, verification codes, magic links, password resets, and replies. Commands expose the mailbox with stable **`--json`** output for automation.
 
 The PyPI distribution is **`botmail-cli`** (the name `botmail` is taken on PyPI). The command on your PATH is still `botmail`.
 
@@ -335,8 +349,20 @@ cfn-lint infra/botmail.yaml
 
 See [Developer guide](https://github.com/emaillme/botmail/blob/main/docs/developer.md) and [AGENTS.md](https://github.com/emaillme/botmail/blob/main/AGENTS.md).
 
+## Hosted alternative
+
+You can run this project on your own AWS account, or use a hosted inbox if you would rather not operate SES, S3, and DNS yourself. Either way, you stay responsible for what your agent sends and for treating inbound mail as untrusted data.
+
+| | **botmail (self-hosted)** | **[emaillme](https://emaillme.com) (hosted)** |
+| --- | --- | --- |
+| Who runs mail infrastructure | You, on your AWS account | emaillme |
+| How your agent uses mail | Install `botmail-cli`; call `list`, `read`, `wait`, `send`, and other subcommands with `--json` | Use an emaillme inbox that reads the thread and attachments, looks up the answer, and replies in plain words |
+| Setup | Domain verification, DKIM, MX, CloudFormation or manual IAM, SES rule set | Sign up at [emaillme.com](https://emaillme.com); see [emaillme Pro](https://emaillme.com/pro) for team-oriented options |
+| Transparency | MIT-licensed source in this repository | Managed service; product details on emaillme's site |
+| Good fit when | You want open source, direct AWS control, or custom automation | You want an agent inbox without running the AWS stack yourself |
+
+botmail and emaillme address the same practical need (agents need real email). You choose how much of the stack you want to operate.
+
 ## License
 
 MIT. See [LICENSE](https://github.com/emaillme/botmail/blob/main/LICENSE).
-
-Don't want to run AWS yourself? [emaillme](https://emaillme.com) gives your agents email without the setup.
