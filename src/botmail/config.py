@@ -7,6 +7,8 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+import boto3
+
 from botmail.session import build_boto3_session
 
 DEFAULT_BUCKET = "my-botmail-bucket"
