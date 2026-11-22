@@ -34,6 +34,17 @@ pytest -q
 cfn-lint infra/botmail.yaml
 ```
 
+## Version
+
+Set `__version__` in `src/botmail/__init__.py` only. `pyproject.toml` reads it via `[tool.setuptools.dynamic]`.
+
 ## CI
 
-`.github/workflows/ci.yml` runs ruff, pytest on Python 3.9 through 3.13, and cfn-lint on every push and PR.
+`.github/workflows/ci.yml` runs:
+
+- **package**: `python -m build`, `twine check`, install wheel, `botmail --help`
+- **test**: ruff, pytest on Python 3.9 through 3.13, cfn-lint
+
+## Releases
+
+See [`docs/RELEASING.md`](RELEASING.md) for PyPI Trusted Publishing and GitHub release steps.
