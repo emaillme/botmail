@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "botmail-cli"
+version = "0.1.0"
+description = "CLI email client for AI agents (Amazon SES outbound, S3 inbound)"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+authors = [{ name = "emaillme contributors" }]
+dependencies = [
+    "boto3>=1.34",
+]
+
+[project.scripts]
+botmail = "botmail.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/emaillme/botmail"
+Repository = "https://github.com/emaillme/botmail"
+
+[project.optional-dependencies]
+dev = [
+    "moto[s3,ses,sts]>=5.0",
+    "pytest>=8.0",
+    "ruff>=0.6",
+    "cfn-lint>=1.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]

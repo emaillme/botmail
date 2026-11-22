@@ -1,0 +1,205 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Inbound mail bucket (SES receipt rule) and IAM policy for botmail CLI agents.
+
+Parameters:
+  DomainName:
+    Type: String
+    Description: Verified SES domain that receives mail (e.g. example.com).
+  MailboxPrefix:
+    Type: String
+    Description: >-
+      S3 key prefix for stored MIME. Leave empty to use DOMAIN/ (e.g. example.com/).
+    Default: ""
+  BucketName:
+    Type: String
+    Description: Globally unique S3 bucket name for inbound mail.
+  CreateReceiptRuleSet:
+    Type: String
+    AllowedValues: ["true", "false"]
+    Default: "true"
+    Description: Create a new SES receipt rule set (only one active set per region).
+  RuleSetName:
+    Type: String
+    Default: botmail-inbound
+    Description: SES receipt rule set name (created or existing).
+  ObjectExpirationDays:
+    Type: Number
+    Default: 0
+    Description: Optional lifecycle expiry for objects (0 disables expiry).
+  CreateIamRole:
+    Type: String
+    AllowedValues: ["true", "false"]
+    Default: "true"
+    Description: Create an IAM role with the botmail policy attached.
+  RoleName:
+    Type: String
+    Default: botmail-agent
+    Description: IAM role name when CreateIamRole is true.
+  TrustedService:
+    Type: String
+    Default: ec2.amazonaws.com
+    Description: AWS service principal for the role trust policy.
+
+Conditions:
+  CreateRuleSet: !Equals [!Ref CreateReceiptRuleSet, "true"]
+  CreateRole: !Equals [!Ref CreateIamRole, "true"]
+  UseLifecycle: !Not [!Equals [!Ref ObjectExpirationDays, 0]]
+  HasCustomPrefix: !Not [!Equals [!Ref MailboxPrefix, ""]]
+
+Resources:
+  MailBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration: !If
+        - UseLifecycle
+        - Rules:
+            - Id: ExpireInboundMail
+              Status: Enabled
+              ExpirationInDays: !Ref ObjectExpirationDays
+              Prefix: !If
+                - HasCustomPrefix
+                - !Ref MailboxPrefix
+                - !Sub "${DomainName}/"
+        - !Ref AWS::NoValue
+
+  MailBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref MailBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowSesPutObject
+            Effect: Allow
+            Principal:
+              Service: ses.amazonaws.com
+            Action: s3:PutObject
+            Resource: !Sub
+              - "${BucketArn}/${Prefix}*"
+              - BucketArn: !GetAtt MailBucket.Arn
+                Prefix: !If
+                  - HasCustomPrefix
+                  - !Ref MailboxPrefix
+                  - !Sub "${DomainName}/"
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+
+  ReceiptRuleSet:
+    Type: AWS::SES::ReceiptRuleSet
+    Condition: CreateRuleSet
+    Properties:
+      RuleSetName: !Ref RuleSetName
+
+  ReceiptRule:
+    Type: AWS::SES::ReceiptRule
+    Properties:
+      RuleSetName: !Ref RuleSetName
+      Rule:
+        Name: !Sub "store-${DomainName}"
+        Enabled: true
+        TlsPolicy: Optional
+        Recipients:
+          - !Ref DomainName
+        Actions:
+          - S3Action:
+              BucketName: !Ref MailBucket
+              ObjectKeyPrefix: !If
+                - HasCustomPrefix
+                - !Ref MailboxPrefix
+                - !Sub "${DomainName}/"
+
+  BotmailPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub "${AWS::StackName}-botmail"
+      Description: Least-privilege S3 inbox + SES send for botmail.
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: ListInboxPrefix
+            Effect: Allow
+            Action:
+              - s3:ListBucket
+            Resource: !GetAtt MailBucket.Arn
+            Condition:
+              StringLike:
+                s3:prefix:
+                  - !Sub
+                    - "${Prefix}*"
+                    - Prefix: !If
+                      - HasCustomPrefix
+                      - !Ref MailboxPrefix
+                      - !Sub "${DomainName}/"
+          - Sid: ReadWriteInboxObjects
+            Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:DeleteObject
+            Resource: !Sub
+              - "${BucketArn}/${Prefix}*"
+              - BucketArn: !GetAtt MailBucket.Arn
+                Prefix: !If
+                  - HasCustomPrefix
+                  - !Ref MailboxPrefix
+                  - !Sub "${DomainName}/"
+          - Sid: SendFromDomain
+            Effect: Allow
+            Action:
+              - ses:SendEmail
+              - ses:SendRawEmail
+            Resource: "*"
+            Condition:
+              StringLike:
+                ses:FromAddress:
+                  - !Sub "*@${DomainName}"
+
+  BotmailRole:
+    Type: AWS::IAM::Role
+    Condition: CreateRole
+    Properties:
+      RoleName: !Ref RoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Ref TrustedService
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Ref BotmailPolicy
+
+Outputs:
+  BucketName:
+    Description: S3 bucket for inbound MIME.
+    Value: !Ref MailBucket
+    Export:
+      Name: !Sub "${AWS::StackName}-BucketName"
+  BotmailPolicyArn:
+    Description: IAM managed policy ARN for botmail permissions.
+    Value: !Ref BotmailPolicy
+    Export:
+      Name: !Sub "${AWS::StackName}-PolicyArn"
+  BotmailRoleArn:
+    Condition: CreateRole
+    Description: IAM role ARN (when CreateIamRole is true).
+    Value: !GetAtt BotmailRole.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-RoleArn"
+  S3Prefix:
+    Description: S3 object prefix for botmail BOTMAIL_PREFIX.
+    Value: !If
+      - HasCustomPrefix
+      - !Ref MailboxPrefix
+      - !Sub "${DomainName}/"
