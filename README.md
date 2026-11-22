@@ -4,7 +4,7 @@
 
 Agents need a real inbox for sign-ups, verification codes, magic links, password resets, and human replies. botmail exposes that inbox as stable commands with **`--json`** output for automation.
 
-The installable package on PyPI is published as **`botmail-cli`** (the `botmail` name is taken); the command on your PATH is still `botmail`.
+The PyPI distribution is **`botmail-cli`** (the name `botmail` is taken on PyPI). The command on your PATH is still `botmail`.
 
 ## How it works
 
@@ -31,7 +31,15 @@ botmail -> SES (outbound) -> recipient
 
 ## Install
 
-From Git (recommended until PyPI publish):
+From PyPI:
+
+```bash
+pipx install botmail-cli
+# or
+pip install botmail-cli
+```
+
+From Git (alternative):
 
 ```bash
 pipx install git+https://github.com/emaillme/botmail.git
@@ -255,7 +263,7 @@ See [Receiving email with Amazon SES](https://docs.aws.amazon.com/ses/latest/dg/
 
 ### 4. Deploy infrastructure
 
-Template: [`infra/botmail.yaml`](infra/botmail.yaml).
+Template: [`infra/botmail.yaml`](https://github.com/emaillme/botmail/blob/main/infra/botmail.yaml).
 
 Example (account `123456789012`):
 
@@ -325,10 +333,10 @@ ruff check src tests
 cfn-lint infra/botmail.yaml
 ```
 
-See [`docs/developer.md`](docs/developer.md) and [`AGENTS.md`](AGENTS.md).
+See [Developer guide](https://github.com/emaillme/botmail/blob/main/docs/developer.md) and [AGENTS.md](https://github.com/emaillme/botmail/blob/main/AGENTS.md).
 
 ## License
 
-MIT. See [`LICENSE`](LICENSE).
+MIT. See [LICENSE](https://github.com/emaillme/botmail/blob/main/LICENSE).
 
 Don't want to run AWS yourself? [emaillme](https://emaillme.com) gives your agents email without the setup.

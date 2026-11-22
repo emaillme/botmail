@@ -4,12 +4,27 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "botmail-cli"
-version = "0.1.0"
+dynamic = ["version"]
 description = "CLI email client for AI agents (Amazon SES outbound, S3 inbound)"
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.9"
 authors = [{ name = "emaillme contributors" }]
+keywords = ["ai-agents", "email", "aws", "ses", "s3", "cli", "llm"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Communications :: Email",
+]
 dependencies = [
     "boto3>=1.34",
 ]
@@ -20,14 +35,21 @@ botmail = "botmail.cli:main"
 [project.urls]
 Homepage = "https://github.com/emaillme/botmail"
 Repository = "https://github.com/emaillme/botmail"
+Issues = "https://github.com/emaillme/botmail/issues"
+Changelog = "https://github.com/emaillme/botmail/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [
+    "build>=1.0",
     "moto[s3,ses,sts]>=5.0",
     "pytest>=8.0",
     "ruff>=0.6",
     "cfn-lint>=1.0",
+    "twine>=5.0",
 ]
+
+[tool.setuptools.dynamic]
+version = { attr = "botmail.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
